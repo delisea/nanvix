@@ -67,6 +67,7 @@
 	EXTERN void putkpg(void *);
 	EXTERN void mm_init(void);
 	EXTERN void *getkpg(int);
+	EXTERN void LRU_sched();
 
 #endif /* _ASM_FILE_ */
 	

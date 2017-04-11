@@ -59,11 +59,15 @@ PUBLIC void resume(struct process *proc)
 		sched(proc);
 }
 
+#include <nanvix/mm.h>
+
 /**
  * @brief Yields the processor.
  */
 PUBLIC void yield(void)
 {
+	LRU_sched();
+	
 	struct process *p;    /* Working process.     */
 	struct process *next; /* Next process to run. */
 
