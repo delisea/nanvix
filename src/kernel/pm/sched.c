@@ -24,6 +24,20 @@
 #include <nanvix/pm.h>
 #include <signal.h>
 
+long next = 1;
+long rnd(void) {
+	long haut, bas, inter;
+	bas = 16807 * (next & 0xffffL);
+	haut = 16807 * (next >> 16);
+	inter = (bas >> 16) + haut;
+	bas = ((bas & 0xffff) | ((inter & 0x7fff) << 16)) + (inter >> 15);
+	if((bas & 0x80000000L) != 0)
+		bas = (bas+1) & 0x7fffffffL;
+		
+		next = bas;
+		return bas;
+}
+
 /**
  * @brief Schedules a process to execution.
  * 
@@ -88,28 +102,41 @@ PUBLIC void yield(void)
 
 	/* Choose a process to run next. */
 	next = IDLE;
-	for (p = FIRST_PROC; p <= LAST_PROC; p++)
-	{
-		/* Skip non-ready process. */
-		if (p->state != PROC_READY)
-			continue;
-		
-		/*
-		 * Process with higher
-		 * waiting time found.
-		 */
-		if (p->counter > next->counter)
+	
+	long nbt = 0;
+	int rdm;
+	
+	for (p = FIRST_PROC; p <= LAST_PROC; p++) {
+		nbt-=(p->priority-40-PRIO_USER-20-p->counter/10);
+	}
+	
+	if(nbt != 0) {
+		rdm = rnd()%nbt;
+		for (p = FIRST_PROC; p <= LAST_PROC; p++)
 		{
-			next->counter++;
-			next = p;
-		}
+			/* Skip non-ready process. */
+			if (p->state != PROC_READY)
+				continue;
 			
-		/*
-		 * Increment waiting
-		 * time of process.
-		 */
-		else
-			p->counter++;
+			rdm+=(p->priority-40-PRIO_USER-20-p->counter/10);
+			
+			/*
+			 * Process with higher
+			 * waiting time found.
+			 */
+			if (rdm <= 0)//(p->counter > next->counter)
+			{
+				next->counter++;
+				next = p;
+			}
+				
+			/*
+			 * Increment waiting
+			 * time of process.
+			 */
+			else
+				p->counter++;
+		}
 	}
 	
 	/* Switch to next process. */
