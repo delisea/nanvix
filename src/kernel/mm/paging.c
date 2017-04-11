@@ -291,48 +291,49 @@ PRIVATE struct
  *          negative number is returned instead.
  */
 PRIVATE int allocf(void)
-{
-	int i;      /* Loop index.  */
-	int oldest; /* Oldest page. */
-	
-	#define OLDEST(x, y) (frames[x].age < frames[y].age)
-	
-	/* Search for a free frame. */
-	oldest = -1;
-	for (i = 0; i < NR_FRAMES; i++)
-	{
-		/* Found it. */
-		if (frames[i].count == 0)
-			goto found;
-		
-		/* Local page replacement policy. */
-		if (frames[i].owner == curr_proc->pid)
-		{
-			/* Skip shared pages. */
-			if (frames[i].count > 1)
-				continue;
-			
-			/* Oldest page found. */
-			if ((oldest < 0) || (OLDEST(i, oldest)))
-				oldest = i;
-		}
-	}
-	
-	/* No frame left. */
-	if (oldest < 0)
-		return (-1);
-	
-	/* Swap page out. */
-	if (swap_out(curr_proc, frames[i = oldest].addr))
-		return (-1);
-	
-found:		
-
-	frames[i].age = ticks;
-	frames[i].count = 1;
-	
-	return (i);
-}
+ {
+	 static int i = 0;       /* Clock index.  */
+	 int loop = 0;           /* ensure to not loop forever */
+	 
+	 /* Search for a free frame if possible to fill the memory. */
+	 for (i = 0; i < NR_FRAMES; i++) {
+		 if (frames[i].count == 0)
+			 goto found;
+	 }
+	 
+	 // Stop if page found or if there are any page wich can be swapped
+	 while (loop < 2) {
+		 /* Local page replacement policy. */
+		 if (frames[i].owner == curr_proc->pid)
+		 {
+			 /* Skip shared pages. */
+			 if (frames[i].count > 1)
+				 continue;
+			 
+			 if(getpte(curr_proc, frames[i].addr)->accessed == 0) {
+			 	if (swap_out(curr_proc, frames[i].addr))
+			 		return (-1); 
+			 	goto found;
+			 }
+			 else
+			 	 getpte(curr_proc, frames[i].addr)->accessed = 0;
+			 
+		 }
+		 i = (i+1) % NR_FRAMES;
+		 if(i == 0)
+		 	 loop++;
+	 }
+	 
+	 /* No frame left. */
+	 return -1;
+	 
+ found:		
+ 
+	 frames[i].age = ticks;
+	 frames[i].count = 1;
+	 
+	 return (i);
+ }
 
 /**
  * @brief Copies a page.
