@@ -207,9 +207,6 @@
 		struct process *next;    /**< Next process in a list. */
 		struct process **chain;  /**< Sleeping chain.         */
 		/**@}*/
-		
-		
-		long unsigned int fail;
 	};
 	
 	/* Forward definitions. */

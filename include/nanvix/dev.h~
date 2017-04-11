@@ -198,6 +198,4 @@
 	 */
 	EXTERN void bdev_fetchblk(struct buffer *buf);
 	
-	EXTERN void set_ready(buffer_t b);
-	
 #endif /* DEV_H_ */

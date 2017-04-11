@@ -344,7 +344,7 @@ PRIVATE struct
 
 
 
-PUBLIC void LRU_sched() { return;
+PUBLIC void LRU_sched() {// return;
 	static int pup = 0;
 	
 	

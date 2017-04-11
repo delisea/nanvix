@@ -281,13 +281,11 @@ PUBLIC void yield_INIT(void)
 	switch_to(next);
 }
 
-//#ifndef MM_LRU
-	//#define MM_LRU
-//#endif
 
-//#ifdef MM_LRU
+
+#ifdef MM_LRU
 	#include <nanvix/mm.h>
-//#endif
+#endif
 
 
 /**
@@ -295,10 +293,9 @@ PUBLIC void yield_INIT(void)
  */
 PUBLIC void yield(void)
 {
-	//#ifdef MM_LRU
-		//__asm__("xchg %bx, %bx");
+	#ifdef MM_LRU
 		LRU_sched();
-	//#endif
+	#endif
 	struct process *p;    /* Working process.     */
 	struct process *next; /* Next process to run. */
 

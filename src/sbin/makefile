@@ -22,6 +22,7 @@
 .PHONY: init
 .PHONY: shutdown
 .PHONY: test
+.PHONY: paddy
 
 # Builds everything.
 all: foobar init shutdown test
@@ -41,6 +42,9 @@ shutdown:
 # Builds test.
 test:
 	$(CC) $(CFLAGS) $(LDFLAGS) test/*.c -o $(SBINDIR)/test $(LIBDIR)/libc.a
+
+paddy:
+	echo ""
 	
 # Cleans compilations files.
 clean:

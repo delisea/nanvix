@@ -420,7 +420,7 @@ PRIVATE int ata_identify(int atadevid)
  * Issues a read operation.
  */
 PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
-{//static int kkkk = 0; kkkk++; if(kkkk>700){kprintf("kkkk");}
+{
 	int bus;       /* Bus number.        */
 	byte_t byte;   /* Byte used for I/O. */
 	uint64_t addr; /* Read address.      */
@@ -428,7 +428,7 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	
 	ata_device_select(atadevid);
 	bus = ata_bus(atadevid);
-//size = 0;for (int ddd = 0; ddd<1; ddd++)size = (size/ddd +size *size)% size;
+
 	/* Buffered read. */
 	if (req->flags & REQ_BUF)
 	{
@@ -470,7 +470,7 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	if (byte & ATA_DF)
 		kprintf("ATA: device error");
 	
-	if(!(req->flags & REQ_SYNC)) {//kprintf("k");
+	if(!(req->flags & REQ_SYNC)) {
 		set_ready(req->u.buffered.buf);
 		//brelse(req->u.buffered.buf);
 	}
@@ -610,7 +610,7 @@ PRIVATE void ata_sched(unsigned atadevid, unsigned flags, ...)
 		 * we can process this block right now.
 		 */
 		if (dev->queue.size == 1)
-		{//static int kkkk = 0; kkkk++; if(kkkk>700)kprintf("rect\n");
+		{
 			if (flags & REQ_WRITE)
 				ata_write_op(atadevid, req);
 			else

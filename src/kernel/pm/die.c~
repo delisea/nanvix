@@ -44,7 +44,6 @@ PUBLIC void die(int status)
 		kpanic("idle process dying");
 	
 	curr_proc->status = status;
-	kprintf("\ndéfaut de cache : %d\n",curr_proc->fail);
 	
 	/*
 	 * Ignore all signals since, 
