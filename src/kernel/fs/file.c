@@ -338,25 +338,23 @@ ssize_t file_reada(struct inode *i, size_t n, off_t off);
  */
 PUBLIC ssize_t file_write(struct inode *i, const void *buf, size_t n, off_t off)
 {
-	const char *p;       /* Reading pointer.      */
+	char *p;             /* Writing pointer.      */
 	size_t blkoff;       /* Block offset.         */
 	size_t chunk;        /* Data chunk size.      */
 	block_t blk;         /* Working block number. */
+	block_t blk2;         /* Working block number. */
 	struct buffer *bbuf; /* Working block buffer. */
-	
-	if(buf == 0) {
-		file_reada(i, n, off);
-		return 0;
-	}
-		
+
 	p = buf;
 	
 	inode_lock(i);
 	
-	/* Write data. */
+	/* Read data. */
 	do
 	{
-		blk = block_map(i, off, 1);
+		blk = block_map(i, off, 0);
+	
+		blk2 = block_map(i, off+BLOCK_SIZE, 0);
 		
 		/* End of file reached. */
 		if (blk == BLOCK_NULL)
@@ -364,30 +362,35 @@ PUBLIC ssize_t file_write(struct inode *i, const void *buf, size_t n, off_t off)
 		
 		bbuf = bread(i->dev, blk);
 		
+		if (blk2 != BLOCK_NULL) {
+			brelse(breada(i->dev, blk2));
+		}
+			
 		blkoff = off % BLOCK_SIZE;
 		
+		/* Calculate read chunk size. */
 		chunk = (n < BLOCK_SIZE - blkoff) ? n : BLOCK_SIZE - blkoff;
-		kmemcpy((char *)bbuf->data + blkoff, buf, chunk);
-		bbuf->flags |= BUFFER_DIRTY;
+		if ((off_t)chunk > i->size - off)
+		{
+			chunk = i->size - off;
+			if (chunk == 0)
+			{
+				brelse(bbuf);
+				goto out;
+			}
+		}
+		
+		kmemcpy(p, (char *)bbuf->data + blkoff, chunk);
 		brelse(bbuf);
 		
 		n -= chunk;
 		off += chunk;
 		p += chunk;
-		
-		/* Update file size. */
-		if (off > i->size)
-		{
-			i->size = off;
-			i->flags |= INODE_DIRTY;
-		}
-		
 	} while (n > 0);
 
 out:
-
 	inode_touch(i);
-	inode_unlock(i);
+	inode_unlock(i);//kprintf("c");
 	return ((ssize_t)(p - (char *)buf));
 }
 
