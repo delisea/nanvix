@@ -331,6 +331,8 @@ out:
 	return ((ssize_t)(p - (char *)buf));
 }
 
+
+ssize_t file_reada(struct inode *i, size_t n, off_t off);
 /*
  * Writes to a regular file.
  */
@@ -341,6 +343,11 @@ PUBLIC ssize_t file_write(struct inode *i, const void *buf, size_t n, off_t off)
 	size_t chunk;        /* Data chunk size.      */
 	block_t blk;         /* Working block number. */
 	struct buffer *bbuf; /* Working block buffer. */
+	
+	if(buf == 0) {
+		file_reada(i, n, off);
+		return 0;
+	}
 		
 	p = buf;
 	
@@ -382,4 +389,57 @@ out:
 	inode_touch(i);
 	inode_unlock(i);
 	return ((ssize_t)(p - (char *)buf));
+}
+
+/*
+ * Reads from a regular file.
+ */
+PUBLIC ssize_t file_reada(struct inode *i, size_t n, off_t off)
+{
+	size_t blkoff;       /* Block offset.         */
+	size_t chunk;        /* Data chunk size.      */
+	block_t blk;         /* Working block number. */
+	struct buffer *bbuf; /* Working block buffer. */
+		
+	
+	inode_lock(i);
+	
+		//kprintf("coucou");
+	/* Read data. */
+	do
+	{
+		blk = block_map(i, off, 0);
+		
+		/* End of file reached. */
+		if (blk == BLOCK_NULL)
+			goto out;
+		
+		bbuf = breada(i->dev, blk);
+		
+		/*if (blk2 != BLOCK_NULL)
+			breada(i->dev, blk2);*/
+			
+		blkoff = off % BLOCK_SIZE;
+		
+		/* Calculate read chunk size. */
+		chunk = (n < BLOCK_SIZE - blkoff) ? n : BLOCK_SIZE - blkoff;
+		if ((off_t)chunk > i->size - off)
+		{
+			chunk = i->size - off;
+			if (chunk == 0)
+			{
+				brelse(bbuf);
+				goto out;
+			}
+		}
+		brelse(bbuf);
+		
+		n -= chunk;
+		off += chunk;
+	} while (n > 0);
+
+out:
+	inode_touch(i);
+	inode_unlock(i);
+	return 0;
 }

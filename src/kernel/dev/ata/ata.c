@@ -469,6 +469,10 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	byte = inputb(pio_ports[bus][ATA_REG_ASTATUS]);
 	if (byte & ATA_DF)
 		kprintf("ATA: device error");
+	
+	if(!(req->flags & REQ_SYNC)) {
+		set_ready(req->u.buffered.buf);
+	}
 }
 
 /*
@@ -664,6 +668,28 @@ PRIVATE int ata_readblk(unsigned minor, buffer_t buf)
 }
 
 /*
+ * Reads a block from a ATA device.
+ */
+PRIVATE int ata_fetchblk(unsigned minor, buffer_t buf)
+{
+	struct atadev *dev;
+	
+	/* Invalid minor device. */
+	if (minor >= 4)
+		return (-EINVAL);
+	
+	dev = &ata_devices[minor];
+	
+	/* Device not valid. */
+	if (!(dev->flags & ATADEV_VALID))
+		return (-EINVAL);
+	
+	ata_sched_buffered(minor, buf, REQ_BUF);
+	
+	return (0);
+}
+
+/*
  * Writes a block to a ATA device.
  */
 PRIVATE int ata_writeblk(unsigned minor, buffer_t buf)
@@ -846,7 +872,8 @@ PRIVATE const struct bdev ata_ops = {
 	&ata_read,    /* read()     */
 	&ata_write,   /* write()    */
 	&ata_readblk, /* readblk()  */
-	&ata_writeblk /* writeblk() */
+	&ata_writeblk, /* writeblk() */
+	&ata_fetchblk /* fetchblk()  */
 };
 
 /*

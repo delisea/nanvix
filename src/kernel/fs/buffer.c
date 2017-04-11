@@ -322,6 +322,24 @@ PUBLIC struct buffer *bread(dev_t dev, block_t num)
 	return (buf);
 }
 
+PUBLIC struct buffer *breada(dev_t dev, block_t num)
+{
+	struct buffer *buf;
+	
+	buf = getblk(dev, num);
+	
+	/* Valid buffer? */
+	if (buf->flags & BUFFER_VALID) {
+		return buf;
+	}
+
+	//bdev_readblk(buf);
+	bdev_fetchblk(buf);
+	
+	
+	return buf;
+}
+
 /**
  * @brief Writes a block buffer to the underlying device.
  * 
@@ -518,4 +536,10 @@ PUBLIC void binit(void)
 	}
 	
 	kprintf("fs: %d slots in the block buffer cache", NR_BUFFERS);
+}
+
+PUBLIC void set_ready(buffer_t b) {
+	/* Update buffer flags. */
+	b->flags |= BUFFER_VALID;
+	b->flags &= ~BUFFER_DIRTY;
 }
