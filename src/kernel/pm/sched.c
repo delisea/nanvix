@@ -59,6 +59,8 @@ PUBLIC void resume(struct process *proc)
 		sched(proc);
 }
 
+#define NB_YIELD 300
+
 /**
  * @brief Yields the processor.
  */
@@ -98,7 +100,27 @@ PUBLIC void yield(void)
 		 * Process with higher
 		 * waiting time found.
 		 */
-		if (p->counter > next->counter)
+		 //if (p->counter > next->counter && (p->priority <= next->priority || next->counter > NB_YIELD ))
+		if (	(p->counter >= NB_YIELD && p->counter >= next->counter)
+			||
+				(
+					(p->counter < NB_YIELD && next->counter < NB_YIELD)
+				&&
+					(
+						p->priority < next->priority
+					||
+						(
+							p->priority == next->priority
+						&&
+							(
+									(p->priority == PRIO_USER && (p->nice < next->nice || (p->nice == next->nice && p->counter >= next->counter)))
+								||
+									(p->priority != PRIO_USER && p->counter >= next->counter)
+							)
+						)
+					)
+				)
+			)
 		{
 			next->counter++;
 			next = p;
