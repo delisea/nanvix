@@ -266,7 +266,12 @@ static int io_test(void)
 	#define BLOCK_SIZE (1 << BLOCK_SIZE_LOG2)
 #define TAILLE_FICHIER 500000
 int Buff[TAILLE_FICHIER];
-
+static void sleep(int ds) {
+	struct tms timing; /* Timing information. */
+	clock_t t;
+	t = times(&timing);//static int kkk = 0;
+	while(times(&timing)-t<100*ds);//printf("%d,%d\n", times(&timing)-t, kkk);kkk++;
+}
 static int io_test2(void)
 {
 	int fd;            /* File descriptor.    */
@@ -279,7 +284,9 @@ static int io_test2(void)
 	if (buffer == NULL)
 		exit(EXIT_FAILURE);
 	
-	t0 = times(&timing);
+	//while(1){printf("%d\n", times(&timing));}
+	//while(1){sleep(5);printf("bip\n");}
+	/*t0 = times(&timing);
 		
 	printf("%d\n",read(fd, buffer, BLOCK_SIZE*80));
 	
@@ -301,7 +308,80 @@ static int io_test2(void)
 	t1 = times(&timing);
 	
 	printf("Elapsed: %d\n", t1 - t0);
+	
+	
+	close(fd);
+	fd = open("/sbin/fibii",  O_RDWR);
+	
+	
+	
+	
+	t2 = times(&timing);
+	while(times(&timing)-t2<1000);
+	//while(times(&timing)<10000);
+	
+	t0 = times(&timing);
 		
+	printf("%d\n",read(fd, buffer, BLOCK_SIZE*80));
+	
+	t1 = times(&timing);
+	
+	printf("Elapsed: %d\n", t1 - t0);
+	
+	
+	t0 = times(&timing);
+		
+	printf("%d\n",read(fd, buffer, BLOCK_SIZE*80));
+	
+	t1 = times(&timing);
+	
+	printf("Elapsed: %d\n", t1 - t0);
+	
+	read(fd, 0, BLOCK_SIZE*80);
+	close(fd);*/
+	
+	
+	
+	
+	int cont;
+	
+	
+	
+	fd = open("/sbin/fibii",  O_RDWR);
+	do {
+	t0 = times(&timing);
+		
+	printf("%d\n",cont = read(fd, buffer, BLOCK_SIZE*80));
+	
+	t1 = times(&timing);
+	
+	printf("Elapsed: %d\n", t1 - t0);
+	} while(cont);
+	close(fd);
+	
+	
+	
+	fd = open("/sbin/fibiii",  O_RDWR);
+	do {
+	t2 = times(&timing);
+	while(times(&timing)-t2<1000);
+	//while(times(&timing)<10000);
+	
+	t0 = times(&timing);
+		
+	printf("%d\n",cont = read(fd, buffer, BLOCK_SIZE*80));
+	
+	t1 = times(&timing);
+	
+	printf("Elapsed: %d\n", t1 - t0);
+	} while(cont);
+	close(fd);
+	
+	read(fd, 0, BLOCK_SIZE*80);
+	
+	
+	
+	
 	
 		
 	/*int parity = 0;
@@ -340,7 +420,6 @@ static int io_test2(void)
 	
 	/* House keeping. */
 	free(buffer);
-	close(fd);
 	
 	/* Print timing statistics. */
 	//if (flags & VERBOSE)
