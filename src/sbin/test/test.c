@@ -276,7 +276,7 @@ static int io_test2(void)
 {
 	int fd;            /* File descriptor.    */
 	struct tms timing; /* Timing information. */
-	clock_t t0, t1, t2;/*, ta, tb;*/    /* Elapsed times.      */
+	clock_t t0, t1;/*, ta, tb;*/    /* Elapsed times.      */
 	char *buffer;      /* Buffer.             */
 	fd = open("/sbin/fibi",  O_RDWR);
 	/* Allocate buffer. */
@@ -363,8 +363,7 @@ static int io_test2(void)
 	
 	fd = open("/sbin/fibiii",  O_RDWR);
 	do {
-	t2 = times(&timing);
-	while(times(&timing)-t2<1000);
+	sleep(2);
 	//while(times(&timing)<10000);
 	
 	t0 = times(&timing);
