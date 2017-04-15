@@ -425,6 +425,7 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	byte_t byte;   /* Byte used for I/O. */
 	uint64_t addr; /* Read address.      */
 	size_t size;    /* # bytes to read.   */
+
 	
 	ata_device_select(atadevid);
 	bus = ata_bus(atadevid);
@@ -463,12 +464,17 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	outputb(pio_ports[bus][ATA_REG_LBAH], (addr >> 0x10) & 0xff);
 
 	outputb(pio_ports[bus][ATA_REG_CMD], ATA_CMD_READ_SECTORS_EXT);
+	
 	ata_bus_wait(bus);
 
 	/* Query return value. */
 	byte = inputb(pio_ports[bus][ATA_REG_ASTATUS]);
 	if (byte & ATA_DF)
 		kprintf("ATA: device error");
+	
+	if(!(req->flags & REQ_SYNC)) {
+		set_ready(req->u.buffered.buf);
+	}
 }
 
 /*
@@ -561,7 +567,7 @@ PRIVATE void ata_sched(unsigned atadevid, unsigned flags, ...)
 	struct atadev *dev;  /* ATA device.        */
 	buffer_t buf;        /* Buffer.            */
 	struct request *req; /* Request.           */
-	
+
 	dev = &ata_devices[atadevid];
 
 	disable_interrupts();
@@ -595,7 +601,6 @@ PRIVATE void ata_sched(unsigned atadevid, unsigned flags, ...)
 		}
 		
 		va_end(args);
-		
 		/* Enqueue request. */
 		dev->queue.tail = (dev->queue.tail + 1)%ATADEV_QUEUE_SIZE;
 		dev->queue.size++;
@@ -659,6 +664,28 @@ PRIVATE int ata_readblk(unsigned minor, buffer_t buf)
 		return (-EINVAL);
 	
 	ata_sched_buffered(minor, buf, REQ_BUF | REQ_SYNC);
+	
+	return (0);
+}
+
+/*
+ * Reads a block from a ATA device.
+ */
+PRIVATE int ata_fetchblk(unsigned minor, buffer_t buf)
+{
+	struct atadev *dev;
+	
+	/* Invalid minor device. */
+	if (minor >= 4)
+		return (-EINVAL);
+	
+	dev = &ata_devices[minor];
+	
+	/* Device not valid. */
+	if (!(dev->flags & ATADEV_VALID))
+		return (-EINVAL);
+	
+	ata_sched_buffered(minor, buf, REQ_BUF);
 	
 	return (0);
 }
@@ -846,7 +873,8 @@ PRIVATE const struct bdev ata_ops = {
 	&ata_read,    /* read()     */
 	&ata_write,   /* write()    */
 	&ata_readblk, /* readblk()  */
-	&ata_writeblk /* writeblk() */
+	&ata_writeblk, /* writeblk() */
+	&ata_fetchblk /* fetchblk()  */
 };
 
 /*
@@ -928,7 +956,7 @@ PRIVATE void ata_handler(int atadevid)
 	
 	/* Read operation. */
 	else
-	{			
+	{
 		/* Read block. */
 		for (i = 0; i < size; i += 2)
 		{
