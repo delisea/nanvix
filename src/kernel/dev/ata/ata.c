@@ -978,7 +978,7 @@ PRIVATE void ata_handler(int atadevid)
 	
 	/* Read operation. */
 	else
-	{long ii = 10000000;if(req->flags & REQ_ASYNC)while((ii--)>0)iowait();			kprintf("HANDLE READ\n");
+	{/*long ii = 10000000;*/if(req->flags & REQ_ASYNC)sleep(&dev->chain, PRIO_IO);//while((ii--)>0)iowait();			kprintf("HANDLE READ\n");
 		/* Read block. */
 		for (i = 0; i < size; i += 2)
 		{

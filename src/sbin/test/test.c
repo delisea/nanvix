@@ -278,7 +278,7 @@ static int io_test2(void)
 	struct tms timing; /* Timing information. */
 	clock_t t0, t1;/*, ta, tb;*/    /* Elapsed times.      */
 	char *buffer;      /* Buffer.             */
-	fd = open("/sbin/fibi",  O_RDWR);
+	//fd = open("/sbin/fibi",  O_RDWR);
 	/* Allocate buffer. */
 	buffer = malloc(MEMORY_SIZE);
 	if (buffer == NULL)
