@@ -282,91 +282,42 @@ PUBLIC int dir_add(struct inode *dinode, struct inode *inode, const char *name)
  */
  #define NR_times    44
 ssize_t file_reada(struct inode *i, size_t n, off_t off);
-struct tms
-	{
-		clock_t tms_utime;  /**< User CPU time.                          */
-		clock_t tms_stime;  /**< System CPU time.                        */
-		clock_t tms_cutime; /**< User CPU time of terminated children.   */
-		clock_t tms_cstime; /**< System CPU time of terminated children. */
-	};
-/*	clock_t times(struct tms *buffer)
-{
-	clock_t elapsed;
-	
-	__asm__ volatile (
-		"int $0x80"
-		: "=a" (elapsed)
-		: "0" (NR_times),
-		  "b" (buffer)
-	);
-	
-	
-	if (elapsed < 0)
-	{
-		//errno = -elapsed;
-		return (-1);
-	}
-	
-	return (elapsed);
-}*/
 PUBLIC ssize_t file_read(struct inode *i, void *buf, size_t n, off_t off)
 {
 	char *p;             /* Writing pointer.      */
 	size_t blkoff;       /* Block offset.         */
 	size_t chunk;        /* Data chunk size.      */
 	block_t blk;         /* Working block number. */
-	//block_t blk2;         /* Working block number. */
+	block_t blk2;         /* Working block number. */
 	struct buffer *bbuf; /* Working block buffer. */
 
+// Version 2 si buff = null
 if(buf == 0) {
 	file_reada(i, n, off);
+	// On renvoie 0 pour ne pas déplacer fd
 	return 0;
 }
 	p = buf;
 	
-	//kprintf("%d\n",n);
-	/*clock_t start_t;//, end_t;
-	struct tms timing;
-	start_t = times(&timing);
-	kprintf("a\n");
-	while(times(&timing)-start_t<1);
-	kprintf("b\n");*/
-	
-	
 	inode_lock(i);
 	
-		//kprintf("coucou");
 	/* Read data. */
 	do
 	{
 		blk = block_map(i, off, 0);
-	
-	//blk2 = block_map(i, off+BLOCK_SIZE, 0);
+		// On selectionne aussi le suivant
+		blk2 = block_map(i, off+BLOCK_SIZE, 0);
 		
 		/* End of file reached. */
 		if (blk == BLOCK_NULL)
 			goto out;
 
-   //start_t = times(&timing);
-		
 		bbuf = bread(i->dev, blk);
 		
-		
-   //end_t = times(&timing);
-   
-   //kprintf("prim %d\n",end_t - start_t);
-	
-   //start_t = times(&timing);
-   
-	/*if (blk2 != BLOCK_NULL) {
-		brelse(breada(i->dev, blk2));
-	}*/
-   //end_t = times(&timing);
-   
-   //kprintf("sec %d\n",end_t - start_t);
-		
-		/*if (blk2 != BLOCK_NULL)
-			breada(i->dev, blk2);*/
+		// On prefetch le suivant
+		if (blk2 != BLOCK_NULL) {
+			brelse(breada(i->dev, blk2));
+		}
 			
 		blkoff = off % BLOCK_SIZE;
 		
@@ -392,12 +343,12 @@ if(buf == 0) {
 
 out:
 	inode_touch(i);
-	inode_unlock(i);//kprintf("c");
+	inode_unlock(i);
 	return ((ssize_t)(p - (char *)buf));
 }
 
 /*
- * Reads from a regular file.
+ * Prefetch a regular file.
  */
 PUBLIC ssize_t file_reada(struct inode *i, size_t n, off_t off)
 {
@@ -406,10 +357,8 @@ PUBLIC ssize_t file_reada(struct inode *i, size_t n, off_t off)
 	block_t blk;         /* Working block number. */
 	struct buffer *bbuf; /* Working block buffer. */
 		
-	
 	inode_lock(i);
 	
-		//kprintf("coucou");
 	/* Read data. */
 	do
 	{
@@ -421,9 +370,6 @@ PUBLIC ssize_t file_reada(struct inode *i, size_t n, off_t off)
 		
 		bbuf = breada(i->dev, blk);
 		
-		/*if (blk2 != BLOCK_NULL)
-			breada(i->dev, blk2);*/
-			
 		blkoff = off % BLOCK_SIZE;
 		
 		/* Calculate read chunk size. */
