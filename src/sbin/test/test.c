@@ -347,36 +347,37 @@ static int io_test2(void)
 	
 	
 	
-	fd = open("/sbin/fibii",  O_RDWR);
-	do {
+	/*fd = open("/sbin/fibii",  O_RDWR);
 	t0 = times(&timing);
-		
-	printf("%d\n",cont = read(fd, buffer, BLOCK_SIZE*80));
+	do {
+	sleep(4);
+		cont = read(fd, buffer, BLOCK_SIZE*20);
+	//printf("%d\n",cont = read(fd, buffer, BLOCK_SIZE*80));
 	
+	} while(cont);
 	t1 = times(&timing);
 	
 	printf("Elapsed: %d\n", t1 - t0);
-	} while(cont);
-	close(fd);
-	
-	
-	
+	close(fd);*/
 	fd = open("/sbin/fibiii",  O_RDWR);
+	
+	t0 = times(&timing);
 	do {
-	sleep(2);
+		read(fd, 0, BLOCK_SIZE*20);
+		sleep(4);
 	//while(times(&timing)<10000);
 	
-	t0 = times(&timing);
-		
-	printf("%d\n",cont = read(fd, buffer, BLOCK_SIZE*80));
 	
+		cont += 100000;//cont = read(fd, buffer, BLOCK_SIZE*20);
+	//printf("%d\n",cont = read(fd, buffer, BLOCK_SIZE*80));
+	
+	} while(cont);
 	t1 = times(&timing);
 	
 	printf("Elapsed: %d\n", t1 - t0);
-	} while(cont);
+	
 	close(fd);
 	
-	read(fd, 0, BLOCK_SIZE*80);
 	
 	
 	

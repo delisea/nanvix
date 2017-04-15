@@ -178,6 +178,7 @@ struct ata_info
 #define REQ_WRITE (1 << 0) /* Write request?         */
 #define REQ_BUF   (1 << 1) /* Buffered request?      */
 #define REQ_SYNC  (1 << 2) /* Synchronous operation? */
+#define REQ_ASYNC  (1 << 3) /* Synchronous operation? */
 
 /*
  * I/O operation request.
@@ -426,6 +427,16 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	uint64_t addr; /* Read address.      */
 	size_t size;    /* # bytes to read.   */
 	
+	
+	//if(req->flags & REQ_ASYNC){kprintf("ERROR\n");return;}
+	/* ADDED */
+	//int i;
+	
+	/* Waste some time. *//*
+	for (i = 0; i < 1000; i++)
+		iowait();*/
+	/* END */
+	
 	ata_device_select(atadevid);
 	bus = ata_bus(atadevid);
 //size = 0;for (int ddd = 0; ddd<1; ddd++)size = (size/ddd +size *size)% size;
@@ -463,6 +474,7 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	outputb(pio_ports[bus][ATA_REG_LBAH], (addr >> 0x10) & 0xff);
 
 	outputb(pio_ports[bus][ATA_REG_CMD], ATA_CMD_READ_SECTORS_EXT);
+	if(!(req->flags & REQ_ASYNC))
 	ata_bus_wait(bus);
 
 	/* Query return value. */
@@ -472,8 +484,12 @@ PRIVATE void ata_read_op(unsigned atadevid, struct request *req)
 	
 	if(!(req->flags & REQ_SYNC)) {//kprintf("k");
 		set_ready(req->u.buffered.buf);
+		//kprintf("READ ASYNC\n");
+	//if(req->flags & REQ_ASYNC)kprintf("SCHEDSTOP\n");
 		//brelse(req->u.buffered.buf);
 	}
+	//else
+	//	kprintf("READ SYNC\n");
 }
 
 /*
@@ -566,7 +582,7 @@ PRIVATE void ata_sched(unsigned atadevid, unsigned flags, ...)
 	struct atadev *dev;  /* ATA device.        */
 	buffer_t buf;        /* Buffer.            */
 	struct request *req; /* Request.           */
-	
+	kprintf("SCHED\n");
 	dev = &ata_devices[atadevid];
 
 	disable_interrupts();
@@ -600,7 +616,6 @@ PRIVATE void ata_sched(unsigned atadevid, unsigned flags, ...)
 		}
 		
 		va_end(args);
-		
 		/* Enqueue request. */
 		dev->queue.tail = (dev->queue.tail + 1)%ATADEV_QUEUE_SIZE;
 		dev->queue.size++;
@@ -609,17 +624,24 @@ PRIVATE void ata_sched(unsigned atadevid, unsigned flags, ...)
 		 * The queue was empty, therefore,
 		 * we can process this block right now.
 		 */
-		if (dev->queue.size == 1)
+		if (dev->queue.size == 1/* && !(req->flags & REQ_ASYNC)*/)
 		{//static int kkkk = 0; kkkk++; if(kkkk>700)kprintf("rect\n");
 			if (flags & REQ_WRITE)
 				ata_write_op(atadevid, req);
 			else
 				ata_read_op(atadevid, req);
+				if(req->flags & REQ_ASYNC)kprintf("SCHEDSTOP\n");
 		}
 		
 		/* Wait operation to complete. */
-		if (req->flags & REQ_SYNC)
+		if (req->flags & REQ_SYNC && !(req->flags & REQ_ASYNC))
 			sleep(&dev->chain, PRIO_IO);
+		
+		if(req->flags & REQ_ASYNC) {
+			kprintf("ASYNC\n");
+		}
+		else
+			kprintf("SYNC\n");
 	
 	enable_interrupts();
 }
@@ -685,7 +707,7 @@ PRIVATE int ata_fetchblk(unsigned minor, buffer_t buf)
 	if (!(dev->flags & ATADEV_VALID))
 		return (-EINVAL);
 	
-	ata_sched_buffered(minor, buf, REQ_BUF);
+	ata_sched_buffered(minor, buf, REQ_BUF | REQ_ASYNC);
 	
 	return (0);
 }
@@ -889,7 +911,7 @@ PRIVATE void ata_handler(int atadevid)
 	word_t word;         /* Working word.  */
 	size_t size;         /* Write size.    */
 	unsigned char *buf;  /* Buffer to use. */
-	
+	kprintf("HANDLE\n");
 	bus = ata_bus(atadevid);
 	dev = &ata_devices[atadevid];
 	
@@ -956,7 +978,7 @@ PRIVATE void ata_handler(int atadevid)
 	
 	/* Read operation. */
 	else
-	{			
+	{long ii = 10000000;if(req->flags & REQ_ASYNC)while((ii--)>0)iowait();			kprintf("HANDLE READ\n");
 		/* Read block. */
 		for (i = 0; i < size; i += 2)
 		{
